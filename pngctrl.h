@@ -14,12 +14,14 @@ extern "C" {
 
 #define COLOR_TYPE_INDEX 0   // インデックスカラー
 
-typedef unsigned char u_char;
+typedef unsigned char   u_char;
+typedef unsigned short  u_short;
+typedef unsigned int    u_int;
 
-typedef unsigned int   LONG;
-typedef unsigned int   DWORD;
-typedef unsigned short WORD;
-typedef unsigned char  BYTE;
+typedef unsigned int    LONG;
+typedef unsigned int    DWORD;
+typedef unsigned short  WORD;
+typedef unsigned char   BYTE;
 
 typedef struct _tRGBQUAD {
     BYTE rgbBlue;

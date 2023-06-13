@@ -10,7 +10,9 @@ You are free to modify and use it as you like. No credit notation is required.
 
 The author assumes no responsibility for any damages resulting from the use of this program code.
 
-# Author
+---
+
+## Author
 
 Pirota Pirozou
 

@@ -26,17 +26,12 @@
 #define _MAX_FNAME	256
 #define _MAX_EXT	256
 
-// PX2ファイル構造体
-typedef struct
-{
-	unsigned short atr[256];										// ツール用アトリビュート
-	unsigned short pal[256];										// X68Kパレット
-	unsigned char  sprpat[0x8000];									// X68Kスプライトパターン
+static u_short pal[256];										// X68Kパレット
 
-} PX2FILE, * pPX2FILE;
-
-static pPX2FILE px2buf = NULL;									// PX2バッファ
 PDIB dibbuf = NULL;
+u_char *patbuf = NULL;
+
+int outsize;											// 出力サイズ
 
 static char infilename[256];
 static char outfilename[256];
@@ -243,13 +238,14 @@ int main(int argc, char *argv[])
 
 
 	// 出力バッファの確保
-	px2buf = (pPX2FILE) malloc(sizeof(PX2FILE));
-	if (px2buf == NULL)
+	outsize = dibbuf->biWidth * dibbuf->biHeight;
+	patbuf =  malloc(outsize);
+	if (patbuf == NULL)
 	{
 		printf("出力バッファは確保できません\n");
 		goto cvEnd;
 	}
-	memset(px2buf, 0, sizeof(PX2FILE));
+	memset(patbuf, 0, outsize);
 
     // 変換処理
 	if (cvjob() < 0)
@@ -260,9 +256,9 @@ int main(int argc, char *argv[])
 cvEnd:
 	// 後始末
 	// PX2出力バッファ開放
-	if (px2buf != NULL)
+	if (patbuf != NULL)
 	{
-		free(px2buf);
+		free(patbuf);
 	}
 
 	// オフスクリーン開放
@@ -307,43 +303,33 @@ static int cvjob(void)
 	size_t a;
 	u_char* pimg;
 	u_char* outptr;
-	u_char* atrptr;
 	FILE* fp;
 	int x, y;
 	int xl, yl;
 	RGBQUAD* paltmp;
 	WORD x68pal;
-	u_char dot2;
+	u_char dot;
 	int err = 0;
 	RGBQUAD* dibpal;
 
 	bi = (BITMAPINFOHEADER*)dibbuf;
 
 	// パターン変換処理
-	outptr = px2buf->sprpat;										// スプライトパターン出力バッファ
-	atrptr = (u_char*)px2buf + 1;									// アトリビュート出力バッファ
+	outptr = patbuf;										// チップパターン出力バッファ
 
 	pimg = NULL;
 	for (yl = 0; yl < bi->biHeight; yl += 16)
 	{
-		for (xl = 0; xl < bi->biWidth; xl += 8)
+		for (xl = 0; xl < bi->biWidth; xl += 16)
 		{
-			if ((xl & 15) == 0)
-			{
-				// アトリビュート書き込み
-				pimg = (u_char*)dibbuf + (sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * bi->biClrUsed) + (yl * bi->biWidth) + xl;
-				*atrptr = (((*pimg) & 0xF0) >> 4); // エンディアン考慮
-				atrptr += 2;
-			}
 			// ピクセル変換
 			for (y = 0; y < 16; y++)
 			{
 				pimg = (u_char*)dibbuf + (sizeof(BITMAPINFOHEADER) + sizeof(RGBQUAD) * bi->biClrUsed) + ((yl + y) * bi->biWidth) + xl;
-				for (x = 0; x < 8; x += 2)
+				for (x = 0; x < 16; x++)
 				{
-					dot2 = (((*pimg) & 0x0F) << 4) | (*(pimg + 1) & 0x0F);
-					pimg += 2;
-					*(outptr++) = dot2;
+					dot = (*pimg++);
+					*(outptr++) = dot;
 				} // x
 			} // y
 		} // xl
@@ -358,102 +344,69 @@ static int cvjob(void)
 		paltmp = &dibpal[x];
 		x68pal = ((paltmp->rgbGreen >> 3) << 11) | ((paltmp->rgbRed >> 3) << 6) | ((paltmp->rgbBlue >> 3) << 1);
 #ifdef BIG_ENDIAN
-		px2buf->pal[x] = x68pal;
+		pal[x] = x68pal;
 #else
-		px2buf->pal[x] = (x68pal>>8)|((x68pal & 0xFF) << 8);			// エンディアン変換
+		pal[x] = (x68pal>>8)|((x68pal & 0xFF) << 8);			// エンディアン変換
 #endif
 	}
 
-	if (!opt_p)
+	// ベタファイル出力
+	fp = fopen(patfilename,"wb");
+	if (fp == NULL)
 	{
-		// PX2ファイル出力
-		fp = fopen(outfilename,"wb");
-		if (fp == NULL)
-		{
-			printf("Can't write '%s'.\n", outfilename);
-			return -1;
-		}
+		printf("Can't write '%s'.\n", patfilename);
+		return -1;
+	}
 
-		// PX2パターン出力
-		a = fwrite(px2buf, 1, sizeof(PX2FILE), fp);
-		if (a != (sizeof(PX2FILE)))
-		{
-			printf("'%s' ファイルが正しく書き込めませんでした！\n", outfilename);
-			err++;
-		}
+	// PATパターン出力
+	err = 0;
+	a = fwrite(patbuf, 1, outsize, fp);
+	if (a != outsize)
+	{
+		printf("'%s' ファイルが正しく書き込めませんでした！\n", patfilename);
+		err++;
+	}
 
-		fclose(fp);
+	fclose(fp);
 
-		// 結果出力
-		if (err == 0)
-		{
-			printf("PX2データ '%s'を作成しました。\n", outfilename);
-		}
-		else
-		{
-			return -1;
-		}
+	// 結果出力
+	if (err == 0)
+	{
+		printf("パターンデータ '%s'を作成しました。\n", patfilename);
 	}
 	else
 	{
-		// ベタファイル出力
-		fp = fopen(patfilename,"wb");
-		if (fp == NULL)
-		{
-			printf("Can't write '%s'.\n", patfilename);
-			return -1;
-		}
-
-		// PATパターン出力
-		err = 0;
-		a = fwrite(px2buf->sprpat, 1, sizeof(px2buf->sprpat), fp);
-		if (a != (sizeof(px2buf->sprpat)))
-		{
-			printf("'%s' ファイルが正しく書き込めませんでした！\n", patfilename);
-			err++;
-		}
-
-		fclose(fp);
-
-		// 結果出力
-		if (err == 0)
-		{
-			printf("パターンデータ '%s'を作成しました。\n", patfilename);
-		}
-		else
-		{
-			return -1;
-		}
-
-		fp = fopen(palfilename, "wb");
-		if (fp == NULL)
-		{
-			printf("Can't write '%s'.\n", palfilename);
-			return -1;
-		}
-
-		// PAL出力
-		err = 0;
-		a = fwrite(px2buf->pal, 1, sizeof(px2buf->pal), fp);
-		if (a != (sizeof(px2buf->pal)))
-		{
-			printf("'%s' ファイルが正しく書き込めませんでした！\n", palfilename);
-			err++;
-		}
-
-		fclose(fp);
-
-		// 結果出力
-		if (err == 0)
-		{
-			printf("パレットデータ '%s'を作成しました。\n", palfilename);
-		}
-		else
-		{
-			return -1;
-		}
-
+		return -1;
 	}
+
+	fp = fopen(palfilename, "wb");
+	if (fp == NULL)
+	{
+		printf("Can't write '%s'.\n", palfilename);
+		return -1;
+	}
+
+	// PAL出力
+	err = 0;
+	a = fwrite(pal, 1, 512, fp);
+	if (a != 512)
+	{
+		printf("'%s' ファイルが正しく書き込めませんでした！\n", palfilename);
+		err++;
+	}
+
+	fclose(fp);
+
+	// 結果出力
+	if (err == 0)
+	{
+		printf("パレットデータ '%s'を作成しました。\n", palfilename);
+	}
+	else
+	{
+		return -1;
+	}
+
 
 	return 0;
 }
