@@ -31,7 +31,7 @@ INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k
 
 
 # コンパイルフラグ
-COMMON_FLAGS = -m$(CPU) -O3 $(INCLUDE_FLAGS)
+COMMON_FLAGS = -m$(CPU) -O3 -DALLMEM -DBIG_ENDIAN $(INCLUDE_FLAGS)
 CFLAGS = $(COMMON_FLAGS) -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall-used-a2 -finput-charset=cp932 -fexec-charset=cp932 -fverbose-asm
 CXXFLAGS = $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 

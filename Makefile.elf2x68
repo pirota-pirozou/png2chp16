@@ -30,8 +30,8 @@ INCLUDE_FLAGS = -I./
 
 
 # コンパイルフラグ
-COMMON_FLAGS = -m$(CPU) -Os $(INCLUDE_FLAGS)
-CFLAGS = $(COMMON_FLAGS) -finput-charset=cp932 -fexec-charset=cp932 -fverbose-asm -DBIG_ENDIAN
+COMMON_FLAGS = -m$(CPU) -O3 -DBIG_ENDIAN $(INCLUDE_FLAGS)
+CFLAGS = $(COMMON_FLAGS) -finput-charset=cp932 -fexec-charset=cp932 -fverbose-asm
 CXXFLAGS = $(CFLAGS) -std=gnu++17
 
 # *.c ソースファイル
