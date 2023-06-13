@@ -1,0 +1,31 @@
+CC = gcc
+CFLAGS = -Wall -Os
+LDFLAGS = -lz -lpng
+LIBS =
+INCLUDE = -I./
+TARGET = $(notdir $(CURDIR))
+SRCDIR = ./
+OBJDIR = ./obj
+EXECUTABLE = ./png2chp16.exe
+
+ifeq ($(strip $(OBJDIR)),)
+OBJDIR = .
+endif
+
+.PHONY: clean
+
+all: $(EXECUTABLE)
+
+SOURCES = $(wildcard $(SRCDIR)/*.c)
+OBJECTS1 = $(addprefix $(OBJDIR)/, png2chp16.o pngctrl.o)
+DEPENDS = $(OBJECTS1:.o=.d)
+
+png2chp16.exe: $(OBJECTS1) $(LIBS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@[ -d $(OBJDIR) ] || mkdir -p $(OBJDIR)
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ -c $<
+
+clean:
+	rm -f $(EXECUTABLE) $(OBJECTS1) $(DEPENDS)
