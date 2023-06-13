@@ -1,11 +1,11 @@
 # for x68000 GCCê^óùéqî≈
 CC = gcc
 CFLAGS = -O -DALLMEM -DBIG_ENDIAN -cpp-stack=409600 -IB:/INCLUDE
-LIBDIR = B:/LIB
+LIBDIR = B:\LIB
 LIBS = $(addprefix $(LIBDIR)/, libz.a libpng.a FLOATFNC.L)
 
 LDFLAGS = -cpp-stack=409600
-INCLUDE = -I./
+INCLUDE = -I.\
 
 .PHONY: clean
 
