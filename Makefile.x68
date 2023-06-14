@@ -1,8 +1,8 @@
 # for x68000 GCCê^óùéqî≈
 CC = gcc
 CFLAGS = -O -DALLMEM -DBIG_ENDIAN -cpp-stack=409600 -IB:/INCLUDE
-LIBDIR = B:\LIB
-LIBS = $(addprefix $(LIBDIR)/, libz.a libpng.a FLOATFNC.L)
+LIBDIR = B:\\LIB
+LIBS = $(addprefix $(LIBDIR)\\, libz.a libpng.a libgcc.a FLOATFNC.L CLIB.L)
 
 LDFLAGS = -cpp-stack=409600
 INCLUDE = -I.\
@@ -23,3 +23,4 @@ $(EXECUTABLE): $(OBJS)
 
 clean:
 	rm -f $(EXECUTABLE) $(OBJS)
+
